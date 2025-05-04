@@ -1,0 +1,92 @@
+[package]
+name = "kernel"
+version = "0.5.12"
+build = "build.rs"
+edition = "2021"
+
+[build-dependencies]
+cc = "1.0"
+rustc-cfg = "0.5"
+toml = "0.8"
+
+[dependencies]
+bitflags = "2"
+bitfield = "0.13.2"
+hashbrown = { version = "0.14.3", default-features = false, features = ["ahash", "inline-more"] }
+linked_list_allocator = "0.9.0"
+log = "0.4"
+redox-path = "0.2.0"
+redox_syscall = { git = "https://gitlab.redox-os.org/redox-os/syscall.git", branch = "master", default-features = false }
+slab_allocator = { path = "slab_allocator", optional = true }
+spin = "0.9.8"
+spinning_top = { version = "0.3", features = ["arc_lock"] }
+rmm = { path = "rmm", default-features = false }
+arrayvec = { version = "0.7.4", default-features = false }
+slab = { version = "0.4", default-features = false }
+# TODO: Remove
+indexmap = { version = "2.5.0", default-features = false }
+
+[dependencies.goblin]
+version = "0.2.1"
+default-features = false
+features = ["elf32", "elf64"]
+
+[dependencies.rustc-demangle]
+version = "0.1.16"
+default-features = false
+
+[target.'cfg(any(target_arch = "aarch64", target_arch = "riscv64"))'.dependencies]
+byteorder = { version = "1", default-features = false }
+fdt = { git = "https://github.com/repnop/fdt.git", rev = "2fb1409edd1877c714a0aa36b6a7c5351004be54" }
+
+[target.'cfg(any(target_arch = "x86", target_arch = "x86_64"))'.dependencies]
+raw-cpuid = "10.2.0"
+x86 = { version = "0.47.0", default-features = false }
+
+[target.'cfg(any(target_arch = "riscv64", target_arch = "riscv32"))'.dependencies]
+sbi-rt = "0.0.3"
+
+[features]
+default = [
+  "acpi",
+  #TODO: issues with Alder Lake and newer CPUs: "multi_core",
+  "graphical_debug",
+  "serial_debug",
+  "self_modifying",
+  "x86_kvm_pv",
+  "syscall_debug",
+]
+
+# Activates some limited code-overwriting optimizations, based on CPU features.
+self_modifying = []
+
+acpi = []
+graphical_debug = []
+lpss_debug = []
+multi_core = ["acpi"]
+profiling = []
+#TODO: remove when threading issues are fixed
+pti = []
+qemu_debug = []
+serial_debug = []
+system76_ec_debug = []
+slab = ["slab_allocator"]
+sys_stat = []
+x86_kvm_pv = []
+
+debugger = ["syscall_debug"]
+syscall_debug = []
+
+sys_fdstat = []
+
+[profile.dev]
+# Avoids having to define the eh_personality lang item and reduces kernel size
+panic = "abort"
+
+[profile.release]
+# Avoids having to define the eh_personality lang item and reduces kernel size
+panic = "abort"
+
+lto = true
+
+debug = "full"
