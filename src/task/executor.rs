@@ -2,11 +2,13 @@ use super::{Task, TaskId};
 use alloc::{collections::BTreeMap, sync::Arc, task::Wake};
 use core::task::{Context, Poll, Waker};
 use crossbeam_queue::ArrayQueue;
+use lazy_static::lazy_static;
+use spin::Mutex;
 
 const MAX_NUMBER_TASKS: usize = 100;
 
 pub struct Executor {
-    tasks: BTreeMap<TaskId, Task>,
+    tasks: Arc<Mutex<BTreeMap<TaskId, Task>>>,
     task_queue: Arc<ArrayQueue<TaskId>>,
     waker_cache: BTreeMap<TaskId, Waker>,
 }
@@ -14,18 +16,10 @@ pub struct Executor {
 impl Executor {
     pub fn new() -> Self {
         Executor {
-            tasks: BTreeMap::new(),
+            tasks: Arc::new(Mutex::new(BTreeMap::new())),
             task_queue: Arc::new(ArrayQueue::new(MAX_NUMBER_TASKS)),
             waker_cache: BTreeMap::new(),
         }
-    }
-
-    pub fn spawn(&mut self, task: Task) {
-        let task_id = task.id;
-        if self.tasks.insert(task_id, task).is_some() {
-            panic!("Task with same id already exists");
-        }
-        self.task_queue.push(task_id).expect("task queue is full");
     }
 
     pub fn run(&mut self) -> ! {
@@ -44,10 +38,17 @@ impl Executor {
         } = self;
 
         while let Some(task_id) = task_queue.pop() {
-            let task = match tasks.get_mut(&task_id) {
+            let mut tasks_guard = tasks.lock();
+            let mut task = match tasks_guard.remove(&task_id) {
                 Some(task) => task,
-                None => continue, // task no longer exists
+                // task no longer exists
+                None => {
+                    drop(tasks_guard);
+                    continue;
+                }
             };
+            drop(tasks_guard);
+
             let waker = waker_cache
                 .entry(task_id)
                 .or_insert_with(|| TaskWaker::new(task_id, task_queue.clone()));
@@ -55,10 +56,15 @@ impl Executor {
             match task.poll(&mut context) {
                 Poll::Ready(()) => {
                     // task done -> remove it and its cached waker
-                    tasks.remove(&task_id);
                     waker_cache.remove(&task_id);
                 }
-                Poll::Pending => {}
+                Poll::Pending => {
+                    // Re-insert the task
+                    let mut tasks_guard = tasks.lock();
+                    if tasks_guard.insert(task_id, task).is_some() {
+                        panic!("Task {:?} re-inserted while being polled", task_id);
+                    }
+                }
             }
         }
     }
@@ -100,5 +106,27 @@ impl Wake for TaskWaker {
 
     fn wake_by_ref(self: &Arc<Self>) {
         self.wake_task();
+    }
+}
+
+#[derive(Clone)]
+pub struct Spawner {
+    tasks: Arc<Mutex<BTreeMap<TaskId, Task>>>,
+    task_queue: Arc<ArrayQueue<TaskId>>,
+}
+
+impl Spawner {
+    pub fn new(executor: &Executor) -> Spawner {
+        Spawner {
+            tasks: executor.tasks.clone(),
+            task_queue: executor.task_queue.clone(),
+        }
+    }
+    pub fn spawn(&mut self, task: Task) {
+        let task_id = task.id;
+        if self.tasks.lock().insert(task_id, task).is_some() {
+            panic!("Task with same id already exists");
+        }
+        self.task_queue.push(task_id).expect("task queue is full");
     }
 }

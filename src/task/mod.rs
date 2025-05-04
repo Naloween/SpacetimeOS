@@ -11,8 +11,8 @@ struct TaskId(u64);
 
 impl TaskId {
     fn new() -> Self {
-        static NEXT_ID: AtomicU64 = AtomicU64::new(0);
-        TaskId(NEXT_ID.fetch_add(1, Ordering::Relaxed))
+        static NEXT_TASK_ID: AtomicU64 = AtomicU64::new(0);
+        TaskId(NEXT_TASK_ID.fetch_add(1, Ordering::Relaxed))
     }
 }
 

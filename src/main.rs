@@ -8,11 +8,16 @@ extern crate alloc;
 
 use bootloader::{BootInfo, entry_point};
 use core::panic::PanicInfo;
+use lazy_static::lazy_static;
 use spacetime_os::{
     allocator,
     memory::{self, BootInfoFrameAllocator},
     println,
-    task::{Task, executor::Executor, keyboard},
+    task::{
+        Task,
+        executor::{Executor, Spawner},
+        keyboard,
+    },
 };
 use x86_64::VirtAddr;
 
@@ -28,13 +33,14 @@ fn kernel_main(boot_info: &'static BootInfo) -> ! {
 
     allocator::init_heap(&mut mapper, &mut frame_allocator).expect("heap initialization failed");
 
-    let mut executor = Executor::new();
-    executor.spawn(Task::new(example_task()));
-    executor.spawn(Task::new(keyboard::print_keypresses()));
-    executor.run();
-
     #[cfg(test)]
     test_main();
+
+    let mut executor = Executor::new();
+    let mut task_spawner = Spawner::new(&executor);
+    task_spawner.spawn(Task::new(example_task(task_spawner.clone())));
+    task_spawner.spawn(Task::new(keyboard::print_keypresses()));
+    executor.run();
 
     println!("It did not crash!");
     spacetime_os::hlt_loop();
@@ -54,11 +60,11 @@ fn panic(info: &PanicInfo) -> ! {
     spacetime_os::test_panic_handler(info)
 }
 
-async fn async_number() -> u32 {
-    42
+async fn example_task(mut spawner: Spawner) {
+    println!("Spawning a new task inside a task...");
+    spawner.spawn(Task::new(example_task2()));
 }
 
-async fn example_task() {
-    let number = async_number().await;
-    println!("async number: {}", number);
+async fn example_task2() {
+    println!("Example task print");
 }
