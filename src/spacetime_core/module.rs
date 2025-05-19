@@ -4,7 +4,7 @@ use alloc::{boxed::Box, collections::BTreeMap, string::String, vec::Vec};
 
 use crate::{
     spacetime_core::reducer::{Reducer, ReducerContext, ReducerInfos},
-    table::{Table, TableBase, TableInfos},
+    spacetime_core::table::{Table, TableBase, TableInfos},
 };
 
 pub struct Module {

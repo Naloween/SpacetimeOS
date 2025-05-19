@@ -15,7 +15,6 @@ pub mod interrupts;
 pub mod memory;
 pub mod serial;
 pub mod spacetime_core;
-pub mod table;
 pub mod task;
 pub mod vga_buffer;
 

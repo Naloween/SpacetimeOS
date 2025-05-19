@@ -11,6 +11,7 @@ use crate::{
 
 pub mod module;
 pub mod reducer;
+pub mod table;
 
 #[derive(Clone)]
 pub struct SpacetimeCore {
