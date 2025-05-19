@@ -4,11 +4,16 @@ use x86_64::structures::gdt::SegmentSelector;
 use x86_64::structures::gdt::{Descriptor, GlobalDescriptorTable};
 use x86_64::structures::tss::TaskStateSegment;
 
+pub const USER_CODE_SEGMENT: u16 = 0x18; // Ring 3 code
+pub const USER_DATA_SEGMENT: u16 = 0x20; // Ring 3 data
+
 lazy_static! {
     static ref GDT: (GlobalDescriptorTable, Selectors) = {
         let mut gdt = GlobalDescriptorTable::new();
         let code_selector = gdt.add_entry(Descriptor::kernel_code_segment());
         let tss_selector = gdt.add_entry(Descriptor::tss_segment(&TSS));
+        gdt.add_entry(Descriptor::user_code_segment());
+        gdt.add_entry(Descriptor::user_data_segment());
         (
             gdt,
             Selectors {

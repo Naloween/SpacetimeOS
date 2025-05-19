@@ -25,7 +25,7 @@ lazy_static! {
         unsafe {
             idt.double_fault
                 .set_handler_fn(test_double_fault_handler)
-                .set_stack_index(spacetime_os::gdt::DOUBLE_FAULT_IST_INDEX);
+                .set_stack_index(spacetime_os::arch::x86_64::gdt::DOUBLE_FAULT_IST_INDEX);
         }
 
         idt
@@ -40,7 +40,7 @@ pub fn init_test_idt() {
 pub extern "C" fn _start() -> ! {
     serial_print!("stack_overflow::stack_overflow...\t");
 
-    spacetime_os::gdt::init();
+    spacetime_os::arch::x86_64::gdt::init();
     init_test_idt();
 
     // trigger a stack overflow
