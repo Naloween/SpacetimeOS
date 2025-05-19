@@ -6,18 +6,16 @@
 
 extern crate alloc;
 
+use alloc::{boxed::Box, string::ToString};
 use bootloader::{BootInfo, entry_point};
 use core::panic::PanicInfo;
-use lazy_static::lazy_static;
 use spacetime_os::{
     allocator,
     memory::{self, BootInfoFrameAllocator},
+    module::AccessLevel,
     println,
-    task::{
-        Task,
-        executor::{Executor, Spawner},
-        keyboard,
-    },
+    spacetime_core::SpacetimeCore,
+    task::keyboard::print_keypresses,
 };
 use x86_64::VirtAddr;
 
@@ -36,11 +34,19 @@ fn kernel_main(boot_info: &'static BootInfo) -> ! {
     #[cfg(test)]
     test_main();
 
-    let mut executor = Executor::new();
-    let mut task_spawner = Spawner::new(&executor);
-    task_spawner.spawn(Task::new(example_task(task_spawner.clone())));
-    task_spawner.spawn(Task::new(keyboard::print_keypresses()));
-    executor.run();
+    let mut spacetime_engine = SpacetimeCore::new();
+
+    let module_id = spacetime_engine.insert_module("System".to_string(), AccessLevel::Admin);
+    let keyboard_reducer_id = spacetime_engine
+        .insert_reducer(
+            module_id,
+            "keyboard_reducer".to_string(),
+            Box::new(|_ctx| Box::pin(print_keypresses())),
+        )
+        .unwrap();
+    spacetime_engine.call_reducer(module_id, keyboard_reducer_id);
+
+    spacetime_engine.run();
 
     println!("It did not crash!");
     spacetime_os::hlt_loop();
@@ -58,13 +64,4 @@ fn panic(info: &PanicInfo) -> ! {
 #[panic_handler]
 fn panic(info: &PanicInfo) -> ! {
     spacetime_os::test_panic_handler(info)
-}
-
-async fn example_task(mut spawner: Spawner) {
-    println!("Spawning a new task inside a task...");
-    spawner.spawn(Task::new(example_task2()));
-}
-
-async fn example_task2() {
-    println!("Example task print");
 }

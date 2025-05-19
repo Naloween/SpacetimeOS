@@ -2,34 +2,32 @@ pub mod executor;
 pub mod keyboard;
 
 use alloc::boxed::Box;
-use core::sync::atomic::{AtomicU64, Ordering};
 use core::task::{Context, Poll};
 use core::{future::Future, pin::Pin};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-struct TaskId(u64);
-
-impl TaskId {
-    fn new() -> Self {
-        static NEXT_TASK_ID: AtomicU64 = AtomicU64::new(0);
-        TaskId(NEXT_TASK_ID.fetch_add(1, Ordering::Relaxed))
-    }
-}
-
 pub struct Task {
-    id: TaskId,
+    pub id: u64,
+    pub module_id: u64,
+    pub reducer_id: u64,
     future: Pin<Box<dyn Future<Output = ()>>>,
 }
 
 impl Task {
-    pub fn new(future: impl Future<Output = ()> + 'static) -> Task {
+    pub fn new(
+        id: u64,
+        module_id: u64,
+        reducer_id: u64,
+        future: impl Future<Output = ()> + 'static,
+    ) -> Self {
         Task {
-            id: TaskId::new(),
+            id,
+            module_id,
+            reducer_id,
             future: Box::pin(future),
         }
     }
 
-    fn poll(&mut self, context: &mut Context) -> Poll<()> {
+    pub fn poll(&mut self, context: &mut Context) -> Poll<()> {
         self.future.as_mut().poll(context)
     }
 }

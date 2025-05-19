@@ -13,8 +13,11 @@ pub mod allocator;
 pub mod gdt;
 pub mod interrupts;
 pub mod memory;
+pub mod module;
+pub mod reducer;
 pub mod serial;
 pub mod spacetime_core;
+pub mod table;
 pub mod task;
 pub mod vga_buffer;
 
@@ -62,7 +65,7 @@ pub fn test_panic_handler(info: &PanicInfo) -> ! {
 }
 
 #[cfg(test)]
-fn test_kernel_main(boot_info: &'static BootInfo) -> ! {
+fn test_kernel_main(_boot_info: &'static BootInfo) -> ! {
     init();
     test_main();
     hlt_loop();

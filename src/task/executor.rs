@@ -1,16 +1,15 @@
-use super::{Task, TaskId};
+use super::Task;
 use alloc::{collections::BTreeMap, sync::Arc, task::Wake};
 use core::task::{Context, Poll, Waker};
 use crossbeam_queue::ArrayQueue;
-use lazy_static::lazy_static;
 use spin::Mutex;
 
 const MAX_NUMBER_TASKS: usize = 100;
 
 pub struct Executor {
-    tasks: Arc<Mutex<BTreeMap<TaskId, Task>>>,
-    task_queue: Arc<ArrayQueue<TaskId>>,
-    waker_cache: BTreeMap<TaskId, Waker>,
+    pub tasks: Arc<Mutex<BTreeMap<u64, Task>>>,
+    pub task_queue: Arc<ArrayQueue<u64>>,
+    waker_cache: BTreeMap<u64, Waker>,
 }
 
 impl Executor {
@@ -82,12 +81,12 @@ impl Executor {
 }
 
 struct TaskWaker {
-    task_id: TaskId,
-    task_queue: Arc<ArrayQueue<TaskId>>,
+    task_id: u64,
+    task_queue: Arc<ArrayQueue<u64>>,
 }
 
 impl TaskWaker {
-    fn new(task_id: TaskId, task_queue: Arc<ArrayQueue<TaskId>>) -> Waker {
+    fn new(task_id: u64, task_queue: Arc<ArrayQueue<u64>>) -> Waker {
         Waker::from(Arc::new(TaskWaker {
             task_id,
             task_queue,
@@ -106,27 +105,5 @@ impl Wake for TaskWaker {
 
     fn wake_by_ref(self: &Arc<Self>) {
         self.wake_task();
-    }
-}
-
-#[derive(Clone)]
-pub struct Spawner {
-    tasks: Arc<Mutex<BTreeMap<TaskId, Task>>>,
-    task_queue: Arc<ArrayQueue<TaskId>>,
-}
-
-impl Spawner {
-    pub fn new(executor: &Executor) -> Spawner {
-        Spawner {
-            tasks: executor.tasks.clone(),
-            task_queue: executor.task_queue.clone(),
-        }
-    }
-    pub fn spawn(&mut self, task: Task) {
-        let task_id = task.id;
-        if self.tasks.lock().insert(task_id, task).is_some() {
-            panic!("Task with same id already exists");
-        }
-        self.task_queue.push(task_id).expect("task queue is full");
     }
 }
