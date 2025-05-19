@@ -13,8 +13,6 @@ pub mod allocator;
 pub mod gdt;
 pub mod interrupts;
 pub mod memory;
-pub mod module;
-pub mod reducer;
 pub mod serial;
 pub mod spacetime_core;
 pub mod table;

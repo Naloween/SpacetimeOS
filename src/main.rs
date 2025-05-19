@@ -12,9 +12,9 @@ use core::panic::PanicInfo;
 use spacetime_os::{
     allocator,
     memory::{self, BootInfoFrameAllocator},
-    module::AccessLevel,
     println,
     spacetime_core::SpacetimeCore,
+    spacetime_core::module::AccessLevel,
     task::keyboard::print_keypresses,
 };
 use x86_64::VirtAddr;

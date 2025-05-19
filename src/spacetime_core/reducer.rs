@@ -1,6 +1,6 @@
 use crate::{
-    module::{AccessLevel, ModuleInfos},
     spacetime_core::SpacetimeCore,
+    spacetime_core::module::{AccessLevel, ModuleInfos},
 };
 use alloc::{boxed::Box, string::String, vec::Vec};
 use core::{any::Any, pin::Pin};

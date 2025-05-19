@@ -3,7 +3,7 @@ use core::{any::Any, pin::Pin};
 use alloc::{boxed::Box, collections::BTreeMap, string::String, vec::Vec};
 
 use crate::{
-    reducer::{Reducer, ReducerContext, ReducerInfos},
+    spacetime_core::reducer::{Reducer, ReducerContext, ReducerInfos},
     table::{Table, TableBase, TableInfos},
 };
 

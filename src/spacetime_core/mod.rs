@@ -4,10 +4,13 @@ use crossbeam_queue::ArrayQueue;
 use spin::Mutex;
 
 use crate::{
-    module::{AccessLevel, Module},
-    reducer::{Reducer, ReducerContext},
+    spacetime_core::module::{AccessLevel, Module},
+    spacetime_core::reducer::{Reducer, ReducerContext},
     task::{Task, executor::Executor},
 };
+
+pub mod module;
+pub mod reducer;
 
 #[derive(Clone)]
 pub struct SpacetimeCore {
