@@ -11,7 +11,6 @@ extern crate alloc;
 
 pub mod allocator;
 pub mod arch;
-pub mod interrupts;
 pub mod memory;
 pub mod serial;
 pub mod spacetime_core;
@@ -26,10 +25,7 @@ use bootloader::{BootInfo, entry_point};
 entry_point!(test_kernel_main);
 
 pub fn init() {
-    gdt::init();
-    interrupts::init_idt();
-    unsafe { interrupts::PICS.lock().initialize() };
-    x86_64::instructions::interrupts::enable();
+    arch::init();
 }
 
 pub trait Testable {
